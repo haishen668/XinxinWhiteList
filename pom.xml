@@ -6,7 +6,7 @@
 
     <groupId>ltd.dreamcraft</groupId>
     <artifactId>XinxinWhiteList</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <packaging>jar</packaging>
 
     <name>XinxinWhiteList</name>
@@ -72,6 +72,41 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20231013</version>
+        </dependency>
+        <!-- AuthMe -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>AuthMe</artifactId>
+            <version>5.6.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/AuthMe-5.6.0.jar</systemPath>
+        </dependency>
+
+        <!-- EssentialsX -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>EssentialsX</artifactId>
+            <version>2.20.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/EssentialsX-2.20.1.jar</systemPath>
+        </dependency>
+
+        <!-- XinxinBotApi -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>XinxinBotApi</artifactId>
+            <version>2.2.14-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/XinxinBotApi-2.1.4-SNAPSHOT.jar</systemPath>
+        </dependency>
+
+        <!-- XinxinCustomMessage -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>XinxinCustomMessage</artifactId>
+            <version>1.0.3</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/XinxinCustomMessage-1.0.3.jar</systemPath>
         </dependency>
     </dependencies>
 </project>
