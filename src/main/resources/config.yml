@@ -28,6 +28,23 @@ join_tip:
 #监听指令的Q群
 groups:
   - "00000"
+#群聊命令组配置 - 不同群聊验证成功后执行不同的命令组
+#权限前缀说明:
+# [console] - 以控制台身份执行命令
+# [op] - 以OP身份执行命令（玩家需在线）
+# 无前缀 - 以玩家身份执行命令（默认）
+group_commands:
+  # 群号: [命令列表]
+  "00000":
+    - "[console]say 欢迎 %player% 加入服务器!"
+    - "[console]give %player% diamond 1"
+    - "[op]gamemode creative"
+    - "msg 欢迎来到服务器！"
+  # 可以添加更多群聊的命令组
+  # "群号2":
+  #   - "[console]命令1"
+  #   - "[op]命令2"
+  #   - "普通命令3"
 messages:
   bind: "验证成功!直接进入服务器即可!"
   fail: "此玩家已经存在,请更换名称"

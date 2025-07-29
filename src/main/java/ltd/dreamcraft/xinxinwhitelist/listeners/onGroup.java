@@ -74,6 +74,10 @@ public class onGroup implements Listener {
                         if (realName != null) realNames.put(name, realName);
                         String ip = onJoin.ipCache.get(name);
                         if (ip != null) realIPS.put(name, ip);
+
+                        // 执行群聊命令组
+                        executeGroupCommands(e.getGroup_id(), name, realName != null ? realName : name);
+
                         Bukkit.getScheduler().runTaskLater(XinxinWhiteList.getInstance(), () -> {
                             realIPS.remove(name);
                             removePlayer(name);
@@ -132,6 +136,68 @@ public class onGroup implements Listener {
         }
 
         return -1;
+    }
+
+    /**
+     * 执行群聊命令组
+     *
+     * @param groupId     群号
+     * @param playerName  玩家名
+     * @param displayName 显示名称
+     */
+    private void executeGroupCommands(long groupId, String playerName, String displayName) {
+        FileConfiguration config = XinxinWhiteList.getInstance().getConfig();
+        String groupIdStr = String.valueOf(groupId);
+
+        // 获取群聊命令组配置
+        if (config.contains("group_commands." + groupIdStr)) {
+            List<String> commands = config.getStringList("group_commands." + groupIdStr);
+
+            if (!commands.isEmpty()) {
+                // 在主线程中执行命令
+                Bukkit.getScheduler().runTask(XinxinWhiteList.getInstance(), () -> {
+                    for (String command : commands) {
+                        // 替换占位符
+                        String processedCommand = command
+                                .replace("%player%", playerName)
+                                .replace("%displayname%", displayName)
+                                .replace("%group%", groupIdStr);
+
+                        // 根据前缀决定执行权限
+                        if (processedCommand.startsWith("[console]")) {
+                            // 控制台执行
+                            String actualCommand = processedCommand.substring(9).trim();
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), actualCommand);
+                        } else if (processedCommand.startsWith("[op]")) {
+                            // OP身份执行（需要玩家在线）
+                            String actualCommand = processedCommand.substring(4).trim();
+                            org.bukkit.entity.Player player = Bukkit.getPlayer(playerName);
+                            if (player != null && player.isOnline()) {
+                                boolean wasOp = player.isOp();
+                                try {
+                                    player.setOp(true);
+                                    Bukkit.dispatchCommand(player, actualCommand);
+                                } finally {
+                                    player.setOp(wasOp); // 恢复原始OP状态
+                                }
+                            } else {
+                                // 玩家不在线，改为控制台执行
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), actualCommand);
+                            }
+                        } else {
+                            // 默认以玩家身份执行
+                            org.bukkit.entity.Player player = Bukkit.getPlayer(playerName);
+                            if (player != null && player.isOnline()) {
+                                Bukkit.dispatchCommand(player, processedCommand);
+                            } else {
+                                // 玩家不在线，改为控制台执行
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), processedCommand);
+                            }
+                        }
+                    }
+                });
+            }
+        }
     }
 
     public static void removePlayer(String name) {
