@@ -1,4 +1,4 @@
-name: XinxinWhiteList
+name: HuaWhiteList
 version: '${project.version}'
 main: ltd.dreamcraft.xinxinwhitelist.XinxinWhiteList
 api-version: '1.13'
