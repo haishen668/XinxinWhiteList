@@ -1,6 +1,7 @@
 package ltd.dreamcraft.xinxinwhitelist;
 
 import com.xinxin.BotApi.BotBind;
+import ltd.dreamcraft.xinxinwhitelist.bstats.Metrics;
 import ltd.dreamcraft.xinxinwhitelist.beans.CustomConfig;
 import ltd.dreamcraft.xinxinwhitelist.database.MYSQL;
 import ltd.dreamcraft.xinxinwhitelist.database.PlayerData;
@@ -68,7 +69,7 @@ public class XinxinWhiteList extends JavaPlugin {
 
     Bukkit.getScheduler().runTaskTimer(this, () -> {
       if (System.currentTimeMillis() - onLogin.last > 2000L) {
-        onLogin.attacks = 0;
+        onLogin.attacks.set(0);
       }
     }, 40L, 40L);
 
@@ -82,6 +83,10 @@ public class XinxinWhiteList extends JavaPlugin {
     } else if ("mysql".equalsIgnoreCase(getConfig().getString("database.type"))) {
       playerData = new MYSQL();
     }
+
+    // bStats 统计
+    int pluginId = 31251;
+    Metrics metrics = new Metrics(this, pluginId);
   }
 
   private void registerEvent(Listener l) {
@@ -230,30 +235,34 @@ public class XinxinWhiteList extends JavaPlugin {
     }
     // 添加 ban 命令
     if (args.length == 2 && "ban".equalsIgnoreCase(args[0])) {
-      try {
-        long qq = Long.parseLong(args[1]);
-        if (playerData.banQQ(qq)) {
-          sender.sendMessage("§a[XXW] QQ " + qq + " 已被封禁");
-        } else {
-          sender.sendMessage("§a[XXW] §c封禁失败");
+      Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+        try {
+          long qq = Long.parseLong(args[1]);
+          if (playerData.banQQ(qq)) {
+            sender.sendMessage("§a[XXW] QQ " + qq + " 已被封禁");
+          } else {
+            sender.sendMessage("§a[XXW] §c封禁失败");
+          }
+        } catch (NumberFormatException e) {
+          sender.sendMessage("§a[XXW] §c请输入有效的QQ号码");
         }
-      } catch (NumberFormatException e) {
-        sender.sendMessage("§a[XXW] §c请输入有效的QQ号码");
-      }
+      });
       return true;
     }
     // 添加 unban 命令
     if (args.length == 2 && "unban".equalsIgnoreCase(args[0])) {
-      try {
-        long qq = Long.parseLong(args[1]);
-        if (playerData.unbanQQ(qq)) {
-          sender.sendMessage("§a[XXW] QQ " + qq + " 已被解封");
-        } else {
-          sender.sendMessage("§a[XXW] §c解封失败");
+      Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+        try {
+          long qq = Long.parseLong(args[1]);
+          if (playerData.unbanQQ(qq)) {
+            sender.sendMessage("§a[XXW] QQ " + qq + " 已被解封");
+          } else {
+            sender.sendMessage("§a[XXW] §c解封失败");
+          }
+        } catch (NumberFormatException e) {
+          sender.sendMessage("§a[XXW] §c请输入有效的QQ号码");
         }
-      } catch (NumberFormatException e) {
-        sender.sendMessage("§a[XXW] §c请输入有效的QQ号码");
-      }
+      });
       return true;
     }
     sender.sendMessage("§a/xxw reload —— 重新载入配置文件");
@@ -276,22 +285,46 @@ public class XinxinWhiteList extends JavaPlugin {
       FileConfiguration playerDataTemp = new CustomConfig("players.yml", XinxinWhiteList.getInstance()).getConfig();
       List<String> playerNames = new ArrayList<>(playerDataTemp.getKeys(false));
       if (!playerNames.isEmpty()) {
-        try (Connection connection = MYSQL.getConnection()) {
+        Connection connection = null;
+        PreparedStatement pstmt = null;
+        try {
+          connection = MYSQL.getConnection();
           connection.setAutoCommit(false); // 开启事务
           String sql = "INSERT INTO xxw_players (name, qq) VALUES (?, ?)";
-          try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            for (String playerName : playerNames) {
-              long qqId = playerDataTemp.getLong(playerName.toLowerCase());
-              pstmt.setString(1, playerName.toLowerCase());
-              pstmt.setLong(2, qqId);
-              pstmt.addBatch();
-            }
-            pstmt.executeBatch(); // 执行批量插入
+          pstmt = connection.prepareStatement(sql);
+          for (String playerName : playerNames) {
+            long qqId = playerDataTemp.getLong(playerName.toLowerCase());
+            pstmt.setString(1, playerName.toLowerCase());
+            pstmt.setLong(2, qqId);
+            pstmt.addBatch();
           }
+          pstmt.executeBatch(); // 执行批量插入
           connection.commit(); // 提交事务
           getLogger().info("§a[XXW] §cYAML数据已成功转换为MySQL");
         } catch (SQLException e) {
           getLogger().severe("§a[XXW] §cYAML数据转换为MySQL失败: " + e.getMessage());
+          if (connection != null) {
+            try {
+              connection.rollback();
+            } catch (SQLException ex) {
+              ex.printStackTrace();
+            }
+          }
+        } finally {
+          if (pstmt != null) {
+            try {
+              pstmt.close();
+            } catch (SQLException e) {
+              e.printStackTrace();
+            }
+          }
+          if (connection != null) {
+            try {
+              connection.setAutoCommit(true);
+            } catch (SQLException e) {
+              e.printStackTrace();
+            }
+          }
         }
       }
     });

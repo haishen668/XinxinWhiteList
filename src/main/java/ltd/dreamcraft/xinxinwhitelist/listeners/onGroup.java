@@ -53,7 +53,7 @@ public class onGroup implements Listener {
                         int level = getQQLevel(e);
                         if (level == -1) {
                             e.replyMessage("接口失效,请联系群主");
-//              return;
+                            return;
                         }
                         if (level < levelLimitMin) {
                             e.replyMessage(config.getString("messages.level_limit", "你的等级不够无法申请白名单"));
@@ -92,41 +92,46 @@ public class onGroup implements Listener {
             return level;
         }
 
-        String urlString = "https://jkapi.com/api/qqinfo?qq=" + qq;
+        String urlString = "https://api.mmp.cc/api/Query?qq=" + qq;
         int maxRetries = 3;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            HttpURLConnection conn = null;
             try {
                 URL url = new URL(urlString);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", "application/json");
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(5000);
 
                 if (conn.getResponseCode() != 200) {
                     throw new RuntimeException("HTTP GET Request Failed with Error code : " + conn.getResponseCode());
                 }
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 StringBuilder sb = new StringBuilder();
-                String output;
-                while ((output = br.readLine()) != null) {
-                    sb.append(output);
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                    String output;
+                    while ((output = br.readLine()) != null) {
+                        sb.append(output);
+                    }
                 }
-                conn.disconnect();
 
                 JSONObject json = new JSONObject(sb.toString());
 
-                // 检查返回码是否为 200（Success）
-                if (json.getInt("code") == 200) {
-                    // 直接从根对象中获取 level
-                    if (json.has("level")) {
-                        return json.getInt("level"); // 取出 level 字段
-                    }
+                if (json.getInt("code") == 0) {
+                    JSONObject data = json.getJSONObject("data");
+                    JSONObject levelInfo = data.getJSONObject("level_info");
+                    return Integer.parseInt(levelInfo.getString("iQQLevel"));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 if (attempt == maxRetries) {
-                    return -1;  // 返回-1表示查询失败
+                    return -1;
+                }
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
                 }
             }
         }

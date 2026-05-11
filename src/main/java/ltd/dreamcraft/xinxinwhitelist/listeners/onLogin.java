@@ -9,16 +9,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class onLogin implements Listener {
-    public static Integer attacks = 0;
+    public static AtomicInteger attacks = new AtomicInteger(0);
 
-    public static Long last = System.currentTimeMillis();
+    public static volatile Long last = System.currentTimeMillis();
 
-    public static Set<UUID> admins = new HashSet<>();
+    public static Set<UUID> admins = ConcurrentHashMap.newKeySet();
 //  private static List<GroupMember> GroupMembersList = new ArrayList<>();
 
 //  public onLogin() {
@@ -52,13 +53,12 @@ public class onLogin implements Listener {
     @EventHandler
     public void onLog(AsyncPlayerPreLoginEvent e) {
         last = System.currentTimeMillis();
-        attacks = attacks + 1;
-        if (attacks > 20)
+        int currentAttacks = attacks.incrementAndGet();
+        if (currentAttacks > 20)
             for (UUID uuid : admins) {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null)
-//          p.sendActionBar("§b§l已拦截攻击[§7§l" + e.getAddress().getHostAddress() + "§b§l|§7§l" + e.getName() + "§b§l]数量: §c§l" + attacks);
-                    p.sendMessage("§b§l已拦截攻击[§7§l" + e.getAddress().getHostAddress() + "§b§l|§7§l" + e.getName() + "§b§l]数量: §c§l" + attacks);
+                    p.sendMessage("§b§l已拦截攻击[§7§l" + e.getAddress().getHostAddress() + "§b§l|§7§l" + e.getName() + "§b§l]数量: §c§l" + currentAttacks);
             }
     }
 

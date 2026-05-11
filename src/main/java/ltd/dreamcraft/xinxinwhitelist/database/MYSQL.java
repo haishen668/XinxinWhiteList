@@ -174,9 +174,12 @@ public class MYSQL implements PlayerData {
             }
 
             String query = "SELECT name, qq FROM xxw_players";
-            try (Connection connection = MYSQL.getConnection();
-                 Statement statement = connection.createStatement();
-                 ResultSet resultSet = statement.executeQuery(query)) {
+            Statement statement = null;
+            ResultSet resultSet = null;
+            try {
+                checkConnection();
+                statement = connection.createStatement();
+                resultSet = statement.executeQuery(query);
 
                 while (resultSet.next()) {
                     String playerName = resultSet.getString("name");
@@ -204,6 +207,13 @@ public class MYSQL implements PlayerData {
             } catch (SQLException e) {
                 e.printStackTrace();
                 XinxinWhiteList.getInstance().getLogger().severe("§a[XXW] §c无法从数据库中获取玩家数据");
+            } finally {
+                try {
+                    if (resultSet != null) resultSet.close();
+                    if (statement != null) statement.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -271,7 +281,7 @@ public class MYSQL implements PlayerData {
             String sql = "INSERT INTO xxw_blackplayers (qq) values (?)";
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
                 preparedStatement.setLong(1, qq);
-                int i = preparedStatement.executeUpdate(sql);
+                int i = preparedStatement.executeUpdate();
                 return i > 0;
             }
         } catch (SQLException e) {
