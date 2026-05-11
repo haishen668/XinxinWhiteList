@@ -9,7 +9,10 @@ on:
       tag:
         description: '发布的版本号'
         required: true
-        default: 'v1.0.0' # 默认的版本号 
+        default: 'v1.0.0' # 默认的版本号
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -32,8 +35,8 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.event.inputs.tag }} # 使用手动输入的标签名
-          name: '${{ github.event.inputs.tag }}' # 项目名 - 标签名
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: '${{ github.event.inputs.tag || github.ref_name }}'
           draft: false
           prerelease: false
         env:
@@ -42,7 +45,7 @@ jobs:
       - name: 上传插件 JAR 📦
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.event.inputs.tag }} # 使用手动输入的标签名
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
             target/*.jar
         env:
