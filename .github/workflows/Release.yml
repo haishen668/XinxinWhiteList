@@ -67,7 +67,8 @@ jobs:
             CHANGELOG=$(git log --pretty=format:"- %s" --no-merges -10)
           fi
           TITLE="${VERSION}"
-          MESSAGE=$(printf "[SIZE=4][B]XinxinWhiteList v%s[/B][/SIZE]\n\n[SIZE=3]更新内容:[/SIZE]\n%s\n\n详细更新内容请查看 GitHub Release:\nhttps://github.com/haishen668/XinxinWhiteList/releases/tag/v%s" "$VERSION" "$CHANGELOG" "$VERSION")
+          CHANGELOG_HTML=$(echo "$CHANGELOG" | sed ':a;N;$!ba;s/\n/<br>/g')
+          MESSAGE="[SIZE=4][B]XinxinWhiteList v${VERSION}[/B][/SIZE]<br><br>[SIZE=3]更新内容:[/SIZE]<br>${CHANGELOG_HTML}<br><br>详细更新内容请查看 GitHub Release:<br>https://github.com/haishen668/XinxinWhiteList/releases/tag/v${VERSION}"
           JAR_FILE=$(ls target/*.jar 2>/dev/null | head -1)
           chmod +x scripts/update-mc9y.sh
           bash scripts/update-mc9y.sh "$VERSION" "$TITLE" "$MESSAGE" "$JAR_FILE"
