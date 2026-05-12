@@ -50,3 +50,24 @@ jobs:
             target/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 更新 bbs.mc9y.net 资源 🌐
+        if: ${{ github.event.inputs.tag || startsWith(github.ref, 'refs/tags/') }}
+        env:
+          MC9Y_USERNAME: ${{ secrets.MC9Y_USERNAME }}
+          MC9Y_PASSWORD: ${{ secrets.MC9Y_PASSWORD }}
+        run: |
+          VERSION="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${VERSION#v}"
+          # 获取上一个 tag 到当前 tag 的 git log 作为更新内容
+          PREV_TAG=$(git tag --sort=-creatordate | grep '^v' | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s" --no-merges)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s" --no-merges -10)
+          fi
+          TITLE="${VERSION}"
+          MESSAGE="[SIZE=4][B]XinxinWhiteList v${VERSION}[/B][/SIZE]\n\n[SIZE=3]更新内容:[/SIZE]\n${CHANGELOG}\n\n详细更新内容请查看 GitHub Release:\nhttps://github.com/haishen668/XinxinWhiteList/releases/tag/v${VERSION}"
+          JAR_FILE=$(ls target/*.jar 2>/dev/null | head -1)
+          chmod +x scripts/update-mc9y.sh
+          bash scripts/update-mc9y.sh "$VERSION" "$TITLE" "$MESSAGE" "$JAR_FILE"
